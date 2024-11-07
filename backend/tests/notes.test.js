@@ -7,10 +7,13 @@ beforeAll(() => {
   resetDatabase();
 });
 
+const request = require('supertest');
+const app = require('../server');
+
 describe('/notes API Endpoints', () => {
   let noteId;
 
-  test('Create a new note', async () => {
+  test('Create a new note with valid title and status', async () => {
     const response = await request(app)
       .post('/notes')
       .send({ title: 'My Note', status: 'urgent' });
@@ -22,6 +25,33 @@ describe('/notes API Endpoints', () => {
     expect(response.body.nbTasks).toBe(0);
 
     noteId = response.body.id;
+  });
+
+  test('Reject creation if title is missing', async () => {
+    const response = await request(app)
+      .post('/notes')
+      .send({ status: 'urgent' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("The 'title' field is required.");
+  });
+
+  test('Reject creation if status is missing', async () => {
+    const response = await request(app)
+      .post('/notes')
+      .send({ title: 'My Note' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Invalid status. Allowed values are 'urgent', 'serious', or 'unimportant'.");
+  });
+
+  test('Reject creation if status is invalid', async () => {
+    const response = await request(app)
+      .post('/notes')
+      .send({ title: 'My Note', status: 'invalid-status' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Invalid status. Allowed values are 'urgent', 'serious', or 'unimportant'.");
   });
 
   test('Get a single note', async () => {

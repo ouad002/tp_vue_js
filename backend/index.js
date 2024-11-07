@@ -85,9 +85,27 @@ app.get('/notes', (req, res) => {
   });
 });
 
-// Create a Note
+// Create a note
 app.post('/notes', (req, res) => {
   const { title, status } = req.body;
+  const VALID_STATUSES = ['urgent', 'serious', 'unimportant'];
+
+
+  // Check if title is provided
+  if (!title) {
+    return res.status(400).json({
+      error: 'The \'title\' field is required.'
+    });
+  }
+
+  // Check if status is valid
+  if (!VALID_STATUSES.includes(status)) {
+    return res.status(400).json({
+      error: 'Invalid status. Allowed values are \'urgent\', \'serious\', or \'unimportant\'.'
+    });
+  }
+
+  // Proceed with creating the note if validation passes
   db.run('INSERT INTO notes (title, status) VALUES (?, ?)', [title, status], function (err) {
     if (err) return res.status(500).send(err.message);
 
