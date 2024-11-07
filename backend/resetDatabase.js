@@ -42,7 +42,24 @@ function resetDatabase() {
         if (err) console.error('Error creating tasks table:', err.message);
         else console.log('Tasks table created.');
       });
+
+      // Insert sample data into 'notes' table
+      db.run(`
+        INSERT INTO notes (title, status) VALUES 
+        ('Note 1', 'urgent'),
+        ('Note 2', 'serious'),
+        ('Note 3', 'unimportant')
+      `);
+
+      // Insert sample data into 'tasks' table
+      db.run(`
+        INSERT INTO tasks (content, noteId) VALUES 
+        ('Task 1 for Note 1', 1),
+        ('Task 2 for Note 1', 1),
+        ('Task 1 for Note 2', 2)
+      `);
     });
+   
 
     // Close the database connection
     db.close((err) => {
