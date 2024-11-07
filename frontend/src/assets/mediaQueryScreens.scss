@@ -1,0 +1,21 @@
+$small-screen-breakpoint: 768px;
+$large-screen-breakpoint: 1024px;
+
+
+@mixin smallScreen {
+    @media (max-width: calc($small-screen-breakpoint - 1px)) {
+        @content;
+    }
+}
+
+@mixin mediumScreen {
+    @media (min-width: $small-screen-breakpoint) and (max-width: calc($large-screen-breakpoint - 1px)) {
+        @content;
+    }
+}
+
+@mixin largeScreen {
+    @media (min-width: $large-screen-breakpoint) {
+        @content;
+    }
+}

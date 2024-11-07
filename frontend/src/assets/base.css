@@ -1,0 +1,61 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+
+    /* 
+      Setting up some global rules for the webpage : 
+
+      - default font-family to use for all text
+      - default text-color and size
+      - remove default margins of the body element
+  */
+
+  font-family: 'Open Sans', sans-serif;
+  color: #333333;
+  font-size: 14px;
+  margin: 0;
+}
+
+
+a {
+  /*
+      Getting rid of default formatting for <a> elements. `inherits` tells that
+      `a` elements should use the value set on its parent for these properties.
+  */
+  text-decoration: inherit;
+  color: inherit;
+}
+
+
+input,
+textarea {
+    outline: none;
+}
+
+button {
+    font-family: inherit;
+    /* For all browsers */
+    font-size: 100%;
+    /* For all browsers */
+    line-height: 1.15;
+    /* For all browsers */
+    margin: 0;
+    /* Firefox and Safari have margin */
+    overflow: visible;
+    /* Edge hides overflow */
+    text-transform: none;
+    /* Firefox inherits text-transform */
+    -webkit-appearance: button;
+    /* Safari otherwise prevents some styles */
+
+    border: 0;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}

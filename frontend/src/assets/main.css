@@ -1,0 +1,7 @@
+@import './base.css';
+
+
+.app-title h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
