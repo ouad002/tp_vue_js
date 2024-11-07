@@ -143,8 +143,8 @@ The server will start on http://localhost:3000 by default.
 - `200 OK` if the note was deleted successfully.
 - `404 Not` Found if the note does not exist.
 
-###Tasks
-####Create a Task for a Note
+### Tasks
+#### Create a Task for a Note
 
 **Endpoint:** `POST /notes/:id/tasks`
 
