@@ -27,7 +27,7 @@ deployBackend:
   script:
     - cd backend/
     - npm install
-    - ./node_modules/.bin/railway up --service chat_node_backend --detach
+    - ./node_modules/.bin/railway up --service emse_notesapp_backend --detach
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
       changes: 

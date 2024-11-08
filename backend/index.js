@@ -3,9 +3,9 @@ const { program } = require('commander');
 const cors = require('cors');
 const { dbFilePath, createTables, populateDatase } = require('./dbUtil');
 const Database = require('better-sqlite3');
-const { ExpressValidator } = require('express-validator');
 
 const env = process.env.NODE_ENV || 'development';
+
 
 /**
  * Prepare command line arguments
