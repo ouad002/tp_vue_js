@@ -1,8 +1,11 @@
 const express = require('express');
 const { program } = require('commander');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
+const { dbFilePath, createTables, populateDatase } = require('./dbUtil');
+const Database = require('better-sqlite3');
+const { ExpressValidator } = require('express-validator');
 
+const env = process.env.NODE_ENV || 'development';
 
 /**
  * Prepare command line arguments
@@ -24,65 +27,59 @@ app.get('/version', (req, res) => {
 
 
 
-const db = new sqlite3.Database('./database.sqlite');
 
-// Initialize database with tables
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS notes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      status TEXT
-    )
-  `);
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      content TEXT NOT NULL,
-      noteId INTEGER,
-      FOREIGN KEY (noteId) REFERENCES notes(id) ON DELETE CASCADE
-    )
-  `);
+
+// Database connection based on environment
+const db = new Database(env === 'production' ? ':memory:' : dbFilePath, {
+  verbose: console.log
 });
+console.log(`Connected to the ${env === 'production' ? 'in-memory' : 'file-based'} SQLite database.`);
+
+createTables(db);
+
+if (env === 'production') {
+  /* Populate in memory database */
+  populateDatase(db);
+}
 
 // Helper function to count tasks for a note
 function countTasks(noteId) {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT COUNT(*) as nbTasks FROM tasks WHERE noteId = ?', [noteId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row.nbTasks);
-    });
-  });
+  return db.prepare('SELECT COUNT(*) as nbTasks FROM tasks WHERE noteId = ?').get(noteId).nbTasks;
 }
+
+
 
 // API Endpoints
 
 // Get a single Note
 app.get('/notes/:id', async (req, res) => {
   const noteId = req.params.id;
-  db.get('SELECT * FROM notes WHERE id = ?', [noteId], async (err, note) => {
-    if (err) return res.status(500).send(err.message);
-    if (!note) return res.status(404).send('Note not found');
+  try {
+    const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(noteId);
+    if (!note) return res.status(404).send(JSON.stringify({error: 'Note not found'}));
+
     
-    const nbTasks = await countTasks(noteId);
+    const nbTasks = countTasks(noteId);
     res.json({ ...note, nbTasks });
-  });
+  } catch (err) {
+    return res.status(500).send(JSON.stringify({error: err.message}));
+  }
 });
 
 // Get list of all Notes
 app.get('/notes', (req, res) => {
-  db.all('SELECT * FROM notes', async (err, notes) => {
-    if (err) return res.status(500).send(err.message);
-    
-    const notesWithTaskCount = await Promise.all(
-      notes.map(async (note) => ({
-        ...note,
-        nbTasks: await countTasks(note.id)
-      }))
-    );
+  try {
+    const notes = db.prepare('SELECT * FROM notes').all();
+
+    const notesWithTaskCount = notes.map(note => ({
+      ...note,
+      nbTasks: countTasks(note.id)
+    }));
     res.json(notesWithTaskCount);
-  });
+  } catch (err) {
+    return res.status(500).send(JSON.stringify({error: err.message}));
+  }
 });
 
 // Create a note
@@ -106,32 +103,36 @@ app.post('/notes', (req, res) => {
   }
 
   // Proceed with creating the note if validation passes
-  db.run('INSERT INTO notes (title, status) VALUES (?, ?)', [title, status], function (err) {
-    if (err) return res.status(500).send(err.message);
+  try {
+    const info = db.prepare('INSERT INTO notes (title, status) VALUES (?, ?)').run(title, status);
+    res.json({ id: info.lastInsertRowid, title, status, nbTasks: 0 });
+  } catch (err) {
+    return res.status(500).send(JSON.stringify({error: err.message}));
+  }
 
-    res.json({ id: this.lastID, title, status, nbTasks: 0 });
-  });
 });
 
 // Delete a Note
 app.delete('/notes/:id', (req, res) => {
   const noteId = req.params.id;
-  db.run('DELETE FROM notes WHERE id = ?', [noteId], function (err) {
-    if (err) return res.status(500).send(err.message);
-    if (this.changes === 0) return res.status(404).send('Note not found');
-
+  try {
+    const info = db.prepare('DELETE FROM notes WHERE id = ?').run(noteId);
+    if (info.changes === 0) return res.status(404).send(JSON.stringify({error: 'Note not found'}));
     res.sendStatus(200);
-  });
+  } catch (err) {
+    return res.status(500).send(JSON.stringify({error: err.message}));
+  }
 });
 
 // List tasks of a note
 app.get('/notes/:id/tasks', (req, res) => {
   const noteId = req.params.id;
-  db.all('SELECT * FROM tasks WHERE noteId = ?', [noteId], (err, tasks) => {
-    if (err) return res.status(500).send(err.message);
-
+  try {
+    const tasks = db.prepare('SELECT * FROM tasks WHERE noteId = ?').all(noteId);
     res.json(tasks);
-  });
+  } catch (err) {
+    return res.status(500).send(JSON.stringify({error: err.message}));
+  }
 });
 
 // Create a task for a note
@@ -139,22 +140,31 @@ app.post('/notes/:id/tasks', (req, res) => {
   const noteId = req.params.id;
   const { content } = req.body;
 
-  db.run('INSERT INTO tasks (content, noteId) VALUES (?, ?)', [content, noteId], function (err) {
-    if (err) return res.status(500).send(err.message);
+  // Check if content is provided
+  if (!content) {
+    return res.status(400).json({
+      error: 'The \'content\' field is required.'
+    });
+  }
 
-    res.json({ id: this.lastID, content, noteId });
-  });
+  try {
+    const info = db.prepare('INSERT INTO tasks (content, noteId) VALUES (?, ?)').run(content, noteId);
+    res.json({ id: info.lastInsertRowid, content, noteId });
+  } catch (err) {
+    return res.status(500).send(JSON.stringify({error: err.message}));
+  }
 });
 
 // Delete a task
 app.delete('/tasks/:id', (req, res) => {
   const taskId = req.params.id;
-  db.run('DELETE FROM tasks WHERE id = ?', [taskId], function (err) {
-    if (err) return res.status(500).send(err.message);
-    if (this.changes === 0) return res.status(404).send('Task not found');
-
+  try {
+    const info = db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
+    if (info.changes === 0) return res.status(404).send(JSON.stringify({error: 'Task not found'}));
     res.sendStatus(200);
-  });
+  } catch (err) {
+    return res.status(500).send(JSON.stringify({error: err.message}));
+  }
 });
 
 
