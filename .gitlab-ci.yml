@@ -1,29 +1,32 @@
 image: node:18
 
 stages:
-  # - test
+  - test
   - build
   - deploy
 
 variables:
-  NODE_ENV: development
   RAILWAY_TOKEN: $RAILWAY_TOKEN  # Set this in GitLab CI/CD variables
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
 
-# testBackend:
-#   stage: test
-#   script:
-#     - cd backend
-#     - npm install
-#     - npm test
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "master"
-#       changes: 
-#         - backend/**/*
+testBackend:
+  stage: test
+  variables:
+    NODE_ENV: test
+  script:
+    - cd backend
+    - npm install
+    - npm test
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      changes: 
+        - backend/**/*
 
 
 deployBackend:
   stage: deploy
+  variables:
+    NODE_ENV: development
   script:
     - cd backend/
     - npm install

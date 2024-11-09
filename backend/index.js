@@ -5,6 +5,8 @@ const { dbFilePath, createTables, populateDatase } = require('./dbUtil');
 const Database = require('better-sqlite3');
 
 const env = process.env.NODE_ENV || 'development';
+const isEnvProd = () => env === 'production';
+const isEnvTest = () => env === 'test';
 
 
 /**
@@ -31,10 +33,10 @@ app.get('/version', (req, res) => {
 
 
 // Database connection based on environment
-const db = new Database(env === 'production' ? ':memory:' : dbFilePath, {
+const db = new Database(isEnvProd() || isEnvTest() ? ':memory:' : dbFilePath, {
   verbose: console.log
 });
-console.log(`Connected to the ${env === 'production' ? 'in-memory' : 'file-based'} SQLite database.`);
+console.log(`Connected to the ${isEnvProd() || isEnvTest() ? 'in-memory' : 'file-based'} SQLite database.`);
 
 createTables(db);
 
@@ -137,7 +139,7 @@ app.get('/notes/:id/tasks', (req, res) => {
 
 // Create a task for a note
 app.post('/notes/:id/tasks', (req, res) => {
-  const noteId = req.params.id;
+  const noteId = parseInt(req.params.id);
   const { content } = req.body;
 
   // Check if content is provided
@@ -168,11 +170,11 @@ app.delete('/tasks/:id', (req, res) => {
 });
 
 
-if (process.env.NODE_ENV !== 'test') {
+if (!isEnvTest()) {
   // Start the server
   app.listen(port, () => {
     console.log(`Server is running on port ${port}. You can access the backend at http://localhost:${port}`);
   });
 }
 
-module.exports = {app}; 
+module.exports = {app, db}; 

@@ -35,7 +35,7 @@ module.exports = [
         ...globals.jest
       }
     },
-    files: ['test/**/*.js']
+    files: ['tests/**/*.js']
   },
   {
     languageOptions: {

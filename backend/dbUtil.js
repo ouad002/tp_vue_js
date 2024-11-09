@@ -59,6 +59,11 @@ function populateDatase(db) {
     `);
 }
 
+function emptyTables(db) {
+  db.prepare('DELETE FROM tasks;').run();
+  db.prepare('DELETE FROM notes;').run();
+}
+
 
 
 
@@ -66,5 +71,6 @@ module.exports = {
   deleteAndRecreateFileDatabase, 
   createTables, 
   populateDatase, 
-  dbFilePath
+  dbFilePath,
+  emptyTables
 };
