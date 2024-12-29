@@ -4,15 +4,15 @@ import Note from './Note.vue'
 import {HOST} from './config.js'
 import CreateNote from './CreateNote.vue';
 
-
 const notesList = ref([]);
-
 
 onMounted(async () => {
   notesList.value = await (await fetch(`${HOST}/notes`)).json();
-})
+});
 
-
+const handleNoteDeleted = (noteId) => {
+  notesList.value = notesList.value.filter(note => note.id !== noteId);
+};
 </script>
 
 <template>
@@ -21,12 +21,12 @@ onMounted(async () => {
       v-for="note in notesList" 
       :key="note.id" 
       :note="note"
+      @noteDeleted="handleNoteDeleted"
     ></Note>
 
     <CreateNote></CreateNote>
   </div>
 </template>
-
 
 <style lang="scss" scoped>
 @use 'assets/mediaQueryScreens.scss' as *;
